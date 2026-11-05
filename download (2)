@@ -1,0 +1,6 @@
+.env
+**/.env
+**/node_modules/
+backend/src/generated/prisma/
+*.log
+coverage/

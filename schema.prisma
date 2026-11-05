@@ -1,0 +1,64 @@
+generator client {
+  provider               = "prisma-client"
+  output                 = "../src/generated/prisma"
+  moduleFormat           = "esm"
+  generatedFileExtension = "ts"
+  importFileExtension    = "ts"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+// SQL in database/init is the source of CHECK constraints and seed ids.
+// Node 24 runs the generated, erasable TypeScript. Application source is JS.
+model Course {
+  id        Int        @id @default(autoincrement())
+  code      String     @db.VarChar(6)
+  title     String     @db.VarChar(100)
+  type      CourseType
+  yearLevel Int        @map("year_level") @db.UnsignedTinyInt
+  schedules Schedule[]
+
+  @@unique([code, title], map: "uq_courses_code_title")
+  @@index([yearLevel, id], map: "idx_courses_year")
+  @@map("courses")
+}
+
+model Schedule {
+  id           Int           @id @default(autoincrement())
+  courseId     Int           @map("course_id")
+  section      Int           @db.UnsignedTinyInt
+  startWeek    Int           @map("start_week") @db.UnsignedTinyInt
+  endWeek      Int           @map("end_week") @db.UnsignedTinyInt
+  dayOfWeek    DayOfWeek     @map("day_of_week")
+  startTime    DateTime      @map("start_time") @db.Time(0)
+  endTime      DateTime      @map("end_time") @db.Time(0)
+  room         String?       @db.VarChar(20)
+  studentGroup StudentGroup? @map("student_group")
+  remarks      String?       @db.VarChar(255)
+  course       Course        @relation(fields: [courseId], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "fk_schedule_course")
+
+  @@index([courseId, section, dayOfWeek, startTime, id], map: "idx_schedule_course_order")
+  @@map("courses_schedule")
+}
+
+enum CourseType {
+  CORE
+  ELECTIVE
+}
+
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+enum StudentGroup {
+  A
+  B
+}

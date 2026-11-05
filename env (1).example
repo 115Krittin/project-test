@@ -1,0 +1,7 @@
+TEAM_CODE=ip26-grid
+BACKEND_PORT=3000
+
+# Fill BOTH passwords before docker compose up.
+# These create users only on the first initialization of an empty data volume.
+MYSQL_ROOT_PASSWORD=
+MYSQL_PASSWORD=
