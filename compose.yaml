@@ -1,0 +1,61 @@
+name: ip26-grid-backend-starter
+
+services:
+  db:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: itb_csv
+      MYSQL_USER: itb_app
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Fill MYSQL_PASSWORD in the root .env}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Fill MYSQL_ROOT_PASSWORD in the root .env}
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "MYSQL_PWD=\"$${MYSQL_PASSWORD}\" mysql --protocol=TCP -h 127.0.0.1 -u \"$${MYSQL_USER}\" -D \"$${MYSQL_DATABASE}\" -e 'SELECT 1' >/dev/null 2>&1"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    networks:
+      - app
+
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    init: true
+    environment:
+      NODE_ENV: production
+      TZ: Asia/Bangkok
+      PORT: "3000"
+      TEAM_CODE: ${TEAM_CODE:-ip26-grid}
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_NAME: itb_csv
+      DB_USER: itb_app
+      DB_PASSWORD: ${MYSQL_PASSWORD:?Fill MYSQL_PASSWORD in the root .env}
+    ports:
+      - "127.0.0.1:${BACKEND_PORT:-3000}:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/v1/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - app
+
+volumes:
+  mysql_data:
+
+networks:
+  app:
+    driver: bridge
